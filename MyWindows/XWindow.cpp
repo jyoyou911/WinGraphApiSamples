@@ -109,7 +109,7 @@ void XWindow::Paint(HBITMAP hDestBmp, HBITMAP hSrcBmp, HBITMAP hMaskBmp,
 	// 2. Alpha blend
 	//	Transparent: garbage
 	//	Opaque     : blend of src bmp and dest bmp
-	BLENDFUNCTION blend = { AC_SRC_OVER, 0, alpha, 0 };
+	BLENDFUNCTION blend = { (BYTE)AC_SRC_OVER, (BYTE)0, (BYTE)alpha, (BYTE)0 };
 	hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, m_hBlend);
 	hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hSrcBmp);
 	::AlphaBlend(m_hDestDC, 0, 0, width, height, 
