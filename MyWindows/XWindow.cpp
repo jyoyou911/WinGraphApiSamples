@@ -97,89 +97,60 @@ void XWindow::Paint(HBITMAP hDestBmp, HBITMAP hSrcBmp, HBITMAP hMaskBmp,
 	if (0 == alpha)
 		return;
 
-	if (alpha != 0xFF)
-	{
-		hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, m_hBlend);
-		hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hDestBmp);	
-		// 1. Copy the part of dest bmp
-		::BitBlt(m_hDestDC, 0, 0, width, height, 
-			m_hSrcDC, x,y,
-			SRCCOPY);
-		::SelectObject(m_hSrcDC, hSrcOld);
-		::SelectObject(m_hDestDC, hDestOld);
+	// 1. Copy the part of dest bmp
+	hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, m_hBlend);
+	hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hDestBmp);	
+	::BitBlt(m_hDestDC, 0, 0, width, height, 
+		m_hSrcDC, x,y,
+		SRCCOPY);
+	::SelectObject(m_hSrcDC, hSrcOld);
+	::SelectObject(m_hDestDC, hDestOld);
 		
-		// 2. Dest bmp | Mask
-		// Result in hTmp
-		//	Transparent: white 
-		//	Opaque     : dest bmp		
-		hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, m_hBlend);
-		hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hMaskBmp);
-		::BitBlt(m_hDestDC, 0, 0, width, height, 
-			m_hSrcDC, x_offset, y_offset,
-			SRCPAINT);
-		::SelectObject(m_hSrcDC, hSrcOld);
-		::SelectObject(m_hDestDC, hDestOld);
-		
-		// 3. Alpha blend
-		// Result in hTmp
-		//	Transparent: white 
-		//	Opaque     : blend of src bmp and dest bmp
-		BLENDFUNCTION blend = { AC_SRC_OVER, 0, alpha, 0 };
-		hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, m_hBlend);
-		hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hSrcBmp);
-		::AlphaBlend(m_hDestDC, 0, 0, width, height, 
-			m_hSrcDC, x_offset, y_offset, width, height, 
-			blend);	
-		::SelectObject(m_hSrcDC, hSrcOld);
-		::SelectObject(m_hDestDC, hDestOld);
-	}
-
-	// 4. Dest bmp | Mask
-	// Result in hCanvas
-	//	Transparent: dest bmp 
-	//	Opaque     : white
-	hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, hDestBmp);
-	hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hMaskBmp);	
-	// Mask black/white exchange
-	COLORREF crOldText = ::SetTextColor(m_hDestDC, 0x00FFFFFF);
-	COLORREF crOldBk   = ::SetBkColor(m_hDestDC, 0x00000000);	
-	// hMaskBmp/hDestBmp hold
-	::BitBlt(m_hDestDC, x, y, width, height, 
-		m_hSrcDC, x_offset, y_offset, 
-		//SRCCOPY);
-		SRCPAINT);
-	::SetTextColor(m_hDestDC, crOldText);
-	::SetBkColor(m_hDestDC, crOldBk);
+	// 2. Alpha blend
+	//	Transparent: garbage
+	//	Opaque     : blend of src bmp and dest bmp
+	BLENDFUNCTION blend = { AC_SRC_OVER, 0, alpha, 0 };
+	hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, m_hBlend);
+	hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hSrcBmp);
+	::AlphaBlend(m_hDestDC, 0, 0, width, height, 
+		m_hSrcDC, x_offset, y_offset, width, height, 
+		blend);	
 	::SelectObject(m_hSrcDC, hSrcOld);
 	::SelectObject(m_hDestDC, hDestOld);
 
+	// 3. Dest bmp XOR blend result
+	//	Transparent: garbage XOR dest bmp
+	//	Opaque     : blend result XOR dest bmp
 	hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, hDestBmp);
-	if (alpha != 0xFF)
-	{
-		// 5. Dest & src bmps Blend result
-		// Result in hDestBmp
-		//	Transparent: dest bmp 
-		//	Opaque     : blend of dest and src bmps		
-		hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, m_hBlend);
-		// hTmp/hDestBmp hold
-		::BitBlt(m_hDestDC, x, y, width, height, 
-			m_hSrcDC, 0, 0, 
-			SRCAND);
-		::SelectObject(m_hSrcDC, hSrcOld);
-	}
-	else
-	{
-		// 5. Dest bmp & Src bmp
-		// Result in hDestBmp
-		//	Transparent: canvas 
-		//	Opaque     : frame
-		hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hSrcBmp);
-		// hSrcBmp/hDestBmp hold
-		::BitBlt(m_hDestDC, x, y, width, height, 
-			m_hSrcDC, x_offset, y_offset, 
-			SRCAND);
-		::SelectObject(m_hSrcDC, hSrcOld);
-	}
+	hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, m_hBlend);
+	::BitBlt(m_hDestDC, x, y, width, height, 
+		m_hSrcDC, x_offset, y_offset, 
+		//SRCCOPY);
+		SRCINVERT);
+	::SelectObject(m_hSrcDC, hSrcOld);
+	::SelectObject(m_hDestDC, hDestOld);
+
+	// 4. Dest bmp & Mask
+	//	Transparent: garbage XOR dest bmp
+	//	Opaque     : black(0x0)
+	hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, hDestBmp);
+	hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hMaskBmp);
+	::BitBlt(m_hDestDC, x, y, width, height,
+		m_hSrcDC, x_offset, y_offset,
+		//SRCCOPY);
+		SRCAND);
+	::SelectObject(m_hSrcDC, hSrcOld);
+	::SelectObject(m_hDestDC, hDestOld);
+
+	// 5. Again: Dest bmp XOR blend result
+	//	Transparent: dest bmp 
+	//	Opaque     : blend result
+	hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, hDestBmp);
+	hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, m_hBlend);
+	::BitBlt(m_hDestDC, x, y, width, height, 
+		m_hSrcDC, 0, 0, 
+		SRCINVERT);
+	::SelectObject(m_hSrcDC, hSrcOld);
 	::SelectObject(m_hDestDC, hDestOld);
 
 	return;
@@ -563,6 +534,7 @@ void XWindow::CreateMask(COLORREF crBackGround,
 	::BitBlt(m_hDestDC, 0, 0, m_nMaxWidth, m_nMaxHeight, NULL, 0, 0, BLACKNESS);
 	// Color convert to make mask
 	::BitBlt(m_hDestDC, 0, 0, width, height, m_hSrcDC, 0, 0, SRCCOPY);
+
 	// Set background to white
 	::SetBkColor(m_hSrcDC, 0x00FFFFFF);
 	// Bmp | Mask
