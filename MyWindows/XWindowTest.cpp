@@ -274,6 +274,7 @@ void XWindowTest::OnLButtonDown(WPARAM wParam,LPARAM lParam)
 		{
 			m_actWnd = w->Element;
 			// Move the active window node to to head of List
+			// And redraw all regions intersected
 			if (w != m_listHead)
 			{
 				// 1. Remove from current position
@@ -287,6 +288,33 @@ void XWindowTest::OnLButtonDown(WPARAM wParam,LPARAM lParam)
 				m_listHead->Prev = w;
 				w->Prev = NULL;
 				m_listHead = w;
+				// 3. Erase the active window first
+				w->Element->Erase();
+				// 4. Redraw all intersected regions from bottum to top(Z order)
+				JListNode<XWindow>* other = prev;
+				RECT actWindow = { w->Element->Current.x, 
+					w->Element->Current.y, 
+					w->Element->Current.x + w->Element->Width, 
+					w->Element->Current.y + w->Element->Height };
+				for (; other != NULL; other = other->Prev)
+				{
+					RECT window = { other->Element->Current.x, 
+						other->Element->Current.y, 
+						other->Element->Current.x + other->Element->Width,
+						other->Element->Current.y + other->Element->Height };
+					RECT interRect;
+					BOOL isInter;
+					// Calculate intersect rectangle
+					isInter = ::IntersectRect(&interRect, &window, &actWindow);
+					if (isInter)
+					{
+						other->Element->Draw(interRect.left,
+							interRect.top,
+							interRect.right - interRect.left,
+							interRect.bottom - interRect.top);
+					}
+				}
+				::InvalidateRect(m_hWnd, &actWindow, FALSE);
 			}
 			break;
 		}
