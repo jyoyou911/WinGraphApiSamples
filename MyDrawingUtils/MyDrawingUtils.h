@@ -18,8 +18,22 @@ namespace MyDrawingUtils
 	// 此类是从 MyDrawingUtils.dll 导出的
 	class MYDRAWINGUTILS_API MyDrawingUtil {
 	public:
-		MyDrawingUtil(void);
-		// TODO:  在此添加您的方法。
+		MyDrawingUtil(HDC);
+		virtual ~MyDrawingUtil(void);
+
+		
+		void CreateMask(COLORREF crBackGround,
+			HBITMAP hSrcBmp, HBITMAP hMask, int width, int height, int range);
+
+		void CopyLayer(HBITMAP hDestBmp, HBITMAP hSrcBmp, 
+			int xDest, int yDest, int width, int height, int xSrc, int ySrc, DWORD rop = SRCCOPY);
+
+		void Mix2Layers(HBITMAP hDestBmp, HBITMAP hSrcBmp, HBITMAP hMaskBmp, HBITMAP hBlend,
+			int x, int y, int width, int height, int x_offset, int y_offset, int alpha);
+		
+	private:
+		HDC m_hDestDC;
+		HDC m_hSrcDC;
 	};
 
 	class MYDRAWINGUTILS_API KWindow
