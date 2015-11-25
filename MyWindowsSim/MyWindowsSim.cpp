@@ -104,7 +104,7 @@ void XWindowTest::OnCreate(HWND hWnd)
 
 
 	HBITMAP hBmpOriginHandle;
-	this->LoadBmp(_T("..\\MyWindows\\bg.bmp"), hBmpOriginHandle, m_scCanvas);
+	this->LoadBmp(_T("..\\MyWindowsSim\\bg.bmp"), hBmpOriginHandle, m_scCanvas);
 	// Zoom it to the window size
 	HBITMAP hOldSrc = (HBITMAP)::SelectObject(m_hSrcDC, hBmpOriginHandle);
 	HBITMAP hOldDest = (HBITMAP)::SelectObject(m_hDestDC, m_hCanvas);
@@ -584,9 +584,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR lpCmd, int nShow)
 {
 	XWindowTest win;
 
-	win.CreateEX(0, szProgram, szProgram, WS_POPUP, 480, 424,
-		800,//GetSystemMetrics(SM_CXSCREEN) / 2, 
-		600,//GetSystemMetrics(SM_CYSCREEN) / 2, 
+	win.CreateEX(0, szProgram, szProgram, WS_POPUP, 400, 200,
+		1280,//GetSystemMetrics(SM_CXSCREEN) / 2, 
+		720,//GetSystemMetrics(SM_CYSCREEN) / 2, 
 		NULL, NULL, hInst);
 
 	win.ShowWindow(nShow);

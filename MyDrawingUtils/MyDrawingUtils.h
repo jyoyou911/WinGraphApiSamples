@@ -1,3 +1,5 @@
+#pragma once
+
 // 下列 ifdef 块是创建使从 DLL 导出更简单的
 // 宏的标准方法。此 DLL 中的所有文件都是用命令行上定义的 MYDRAWINGUTILS_EXPORTS
 // 符号编译的。在使用此 DLL 的
@@ -23,13 +25,14 @@ namespace MyDrawingUtils
 
 		
 		void CreateMask(COLORREF crBackGround,
-			HBITMAP hSrcBmp, HBITMAP hMask, int width, int height, int range);
+			HBITMAP hSrcBmp, HBITMAP hMask, int width, int height, int range = 50);
 
-		void CopyLayer(HBITMAP hDestBmp, HBITMAP hSrcBmp, 
-			int xDest, int yDest, int width, int height, int xSrc, int ySrc, DWORD rop = SRCCOPY);
+		void CopyLayer(HBITMAP hDestBmp, int xDest, int yDest, int width, int height,
+			HBITMAP hSrcBmp, int xSrc, int ySrc, DWORD rop = SRCCOPY);
 
-		void Mix2Layers(HBITMAP hDestBmp, HBITMAP hSrcBmp, HBITMAP hMaskBmp, HBITMAP hBlend,
-			int x, int y, int width, int height, int x_offset, int y_offset, int alpha);
+		void Mix2Layers(HBITMAP hDestBmp, int x, int y, int width, int height, 
+			HBITMAP hSrcBmp, int x_offset, int y_offset, 
+			HBITMAP hMaskBmp, HBITMAP hBlend, int alpha = 0xFF);
 		
 	private:
 		HDC m_hDestDC;

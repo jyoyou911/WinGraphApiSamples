@@ -6,6 +6,9 @@
 
 #include <windows.h>
 #include <wingdi.h>
+#include "MyDrawingUtils.h"
+
+using namespace MyDrawingUtils;
 
 #define XWINDOW_BORDER_TRPRATE(alpha) ((alpha) * 3 / 4)
 
@@ -104,28 +107,6 @@ public:
 	void Resize(int mode, int x_offset, int y_offset);
 	XWindowRegion HitTest(const POINT& point);
 
-private:
-	void Paint(HBITMAP hDestBmp, HBITMAP hSrcBmp, HBITMAP hMaskBmp, 
-		int x, int y, int width, int height, int x_offset = 0, int y_offset = 0, int alpha = 0xFF);
-	void SetRects(void);
-	void DrawBorders(COLORREF color, bool drawMask = true);
-	void CreateMask(COLORREF crBackGround, 
-			HBITMAP hSrcBmp, HBITMAP hMask, int width, int height, int range = 0);
-
-protected:
-	HWND m_hParentWnd;
-	RECT m_scParts[XWINDOW_PART_MAX];
-	HBITMAP m_hMain;
-	HBITMAP m_hMask;
-	HBITMAP m_hBackup;
-	HBITMAP m_hBlend;
-	HBITMAP m_hCanvas;
-	HDC m_hDestDC;
-	HDC m_hSrcDC;
-	bool m_bOK;
-	int m_nMaxWidth;
-	int m_nMaxHeight;
-
 public:
 	POINT Previous;
 	POINT Current;
@@ -137,5 +118,23 @@ public:
 	bool  Visible;
 	int   Index;
 	UINT  ID;
+
+private:
+	void SetRects(void);
+	void DrawBorders(COLORREF color, bool drawMask = true);
+
+private:
+	HWND m_hParentWnd;
+	RECT m_scParts[XWINDOW_PART_MAX];
+	HBITMAP m_hMain;
+	HBITMAP m_hMask;
+	HBITMAP m_hBackup;
+	HBITMAP m_hBlend;
+	HBITMAP m_hCanvas;
+	HDC m_hDC;
+	bool m_bOK;
+	int m_nMaxWidth;
+	int m_nMaxHeight;
+	MyDrawingUtil* m_util;
 };
 

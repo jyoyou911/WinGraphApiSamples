@@ -109,8 +109,8 @@ namespace MyDrawingUtils
 	/// <param name="xSrc">源层起点X坐标</param>
 	/// <param name="ySrc">源层起点Y坐标</param>
 	/// <param name="rop">操作（默认为复制）</param>
-	void MyDrawingUtil::CopyLayer(HBITMAP hDestBmp, HBITMAP hSrcBmp, 
-		int xDest, int yDest, int width, int height, int xSrc, int ySrc, DWORD rop)
+	void MyDrawingUtil::CopyLayer(HBITMAP hDestBmp, int xDest, int yDest, int width, int height,
+		HBITMAP hSrcBmp, int xSrc, int ySrc, DWORD rop)
 	{
 		HBITMAP hDestOld = NULL;
 		HBITMAP hSrcOld = NULL;
@@ -139,8 +139,9 @@ namespace MyDrawingUtils
 	/// <param name="x_offset">源层起点X坐标</param>
 	/// <param name="y_offset">源层起点Y坐标</param>
 	/// <param name="alpha">混合度</param>
-	void MyDrawingUtil::Mix2Layers(HBITMAP hDestBmp, HBITMAP hSrcBmp, HBITMAP hMaskBmp, HBITMAP hBlend,
-		int x, int y, int width, int height, int x_offset, int y_offset, int alpha)
+	void MyDrawingUtil::Mix2Layers(HBITMAP hDestBmp, int x, int y, int width, int height,
+		HBITMAP hSrcBmp, int x_offset, int y_offset,
+		HBITMAP hMaskBmp, HBITMAP hBlend, int alpha)
 	{
 		HBITMAP hDestOld = NULL;
 		HBITMAP hSrcOld = NULL;
