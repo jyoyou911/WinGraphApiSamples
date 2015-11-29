@@ -13,8 +13,6 @@ static const TCHAR szMessage[] = _T("Hello World");
 static const TCHAR szFace[] = _T("Times New Roman");
 static const TCHAR szHint[] = _T("Press ESC to quit");
 static const TCHAR szProgram[] = _T("SpriteTest");
-//static const DWORD MASKCOLOR = 0x00FC04A8; //sakura
-//static const DWORD MASKCOLOR = 0x00E9ECE9; // butterfly
 static const DWORD MASKCOLOR = 0x00FF00FF; // cat
 
 static const long KW_OK = 0;
