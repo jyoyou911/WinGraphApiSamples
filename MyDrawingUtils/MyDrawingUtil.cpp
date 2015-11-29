@@ -125,6 +125,24 @@ namespace MyDrawingUtils
 			::SelectObject(m_hSrcDC, hSrcOld);
 	}
 
+	void MyDrawingUtil::CopyZoomedLayer(HBITMAP hDestBmp, int xDest, int yDest, int wDest, int hDest, 
+		HBITMAP hSrcBmp, int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop)
+	{
+		HBITMAP hDestOld = NULL;
+		HBITMAP hSrcOld = NULL;
+
+		hDestOld = (HBITMAP) ::SelectObject(m_hDestDC, hDestBmp);
+		hSrcOld = (HBITMAP) ::SelectObject(m_hSrcDC, hSrcBmp);
+		::SetStretchBltMode(m_hDestDC, HALFTONE);
+		::StretchBlt(m_hDestDC, xDest, yDest, wDest, hDest,
+			m_hSrcDC, xSrc, ySrc, wSrc, hSrc, rop);
+		// Restore
+		if (hDestOld)
+			::SelectObject(m_hDestDC, hDestOld);
+		if (hSrcOld)
+			::SelectObject(m_hSrcDC, hSrcOld);
+	}
+
 	/// <summary>
 	/// 混合两个图画层。包括透明色的绘制和Alpha混合。
 	/// </summary>
@@ -207,6 +225,21 @@ namespace MyDrawingUtils
 		::SelectObject(m_hDestDC, hDestOld);
 
 		return;
+	}
+
+	long MyDrawingUtil::LoadBmp(LPCTSTR lpszBmpFileName, HBITMAP & hBmpHandle, BITMAP & scBmpInfo)
+	{
+		if (NULL == lpszBmpFileName)
+			return ERR;
+
+		// Load the original bmp file to memory, and get the original size
+		hBmpHandle = (HBITMAP)
+			::LoadImage(NULL, lpszBmpFileName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		if (NULL == hBmpHandle)
+			return ERR;
+		::GetObject(hBmpHandle, sizeof(scBmpInfo), &scBmpInfo);
+
+		return OK;
 	}
 
 };

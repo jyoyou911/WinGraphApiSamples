@@ -12,13 +12,15 @@
 // 
 //////////////////////////////////////////////////////////////////////
 
-XWindow::XWindow(HWND hParent, HDC hDestDC, HDC hSrcDC, HBITMAP hCanvas, 
+extern MyDrawingUtil* g_util;
+
+XWindow::XWindow(HWND hParent, HBITMAP hCanvas, 
 				 int width, int height, int x, int y, int maxX, int maxY)
 		: m_hParentWnd(hParent), m_hMain(NULL), m_hMask(NULL), m_hBackup(NULL), m_hBlend(NULL), 
 		  m_hCanvas(hCanvas), m_hDC(NULL), m_nMaxWidth(maxX), m_nMaxHeight(maxY), 
 		  m_bOK(false), 
 		  Width(width), Height(height), Alpha(0xFF), Layer(1), UpdateFlag(false), Index(0), 
-		  Visible(false), ID(0), m_util(NULL)
+		  Visible(false), ID(0)
 {
 	if (Width < XWINDOW_MIN_WIDTH)
 		Width = XWINDOW_MIN_WIDTH;
@@ -41,7 +43,6 @@ XWindow::XWindow(HWND hParent, HDC hDestDC, HDC hSrcDC, HBITMAP hCanvas,
 	m_hMask = ::CreateBitmap(maxX, maxY, 1, 1, NULL);
 	m_hBackup = ::CreateCompatibleBitmap(hdc, maxX, maxY);
 	m_hBlend = ::CreateCompatibleBitmap(hdc, maxX, maxY);
-	m_util = new MyDrawingUtil(hdc);
 	::ReleaseDC(m_hParentWnd, hdc);
 
 	SetRects();
@@ -113,7 +114,7 @@ void XWindow::Draw(int x, int y, int width, int height)
 		return;
 
 	// 0. Backup the part of canvas
-	m_util->CopyLayer(m_hBackup, x_offset, y_offset, width, height, m_hCanvas, x, y);
+	g_util->CopyLayer(m_hBackup, x_offset, y_offset, width, height, m_hCanvas, x, y);
 
 	RECT window = {x, y, x + Width, y + Height};
 	RECT interRect;
@@ -124,7 +125,7 @@ void XWindow::Draw(int x, int y, int width, int height)
 		isInter = ::IntersectRect(&interRect, &window, &m_scParts[i]);
 		if (isInter)
 		{
-			m_util->Mix2Layers(m_hCanvas, 
+			g_util->Mix2Layers(m_hCanvas, 
 				interRect.left, 
 				interRect.top, 
 				interRect.right - interRect.left, 
@@ -150,7 +151,7 @@ void XWindow::Erase(int flag)
 	// Restore the part of canvas
 	int x = (XWINDOW_ERASE_PREVIOUS == flag) ? Previous.x : Current.x;
 	int y = (XWINDOW_ERASE_PREVIOUS == flag) ? Previous.y : Current.y;
-	m_util->CopyLayer(m_hCanvas, x, y, Width, Height, m_hBackup, 0, 0);
+	g_util->CopyLayer(m_hCanvas, x, y, Width, Height, m_hBackup, 0, 0);
 
 	return;
 }
@@ -392,7 +393,7 @@ void XWindow::DrawBorders(COLORREF color, bool drawMask)
 	if (drawMask)
 	{
 		::SelectObject(m_hDC, hDestOld);
-		m_util->CreateMask(0x00000000, m_hMain, m_hMask, Width, XWINDOW_TITLE_HEIGHT);
+		g_util->CreateMask(0x00000000, m_hMain, m_hMask, Width, XWINDOW_TITLE_HEIGHT);
 		hDestOld = (HBITMAP)::SelectObject(m_hDC, m_hMain);
 	}
 	// Draw close button

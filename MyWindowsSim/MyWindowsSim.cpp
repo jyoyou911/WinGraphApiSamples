@@ -13,9 +13,6 @@ static const TCHAR szFace[] = _T("Times New Roman");
 static const TCHAR szHint[] = _T("Press ESC to quit");
 static const TCHAR szProgram[] = _T("KWindowTest");
 
-static const long KW_OK = 0;
-static const long KW_ERR = 1;
-
 static const int XWINDOW_NUM_MAX = 10;
 
 static int XWINDOW_ID = 0;
@@ -27,6 +24,7 @@ template<typename T> struct JListNode
 	JListNode* Prev;
 };
 
+MyDrawingUtil* g_util = NULL;
 
 class XWindowTest : public MyDrawingUtils::KWindow
 {
@@ -45,15 +43,7 @@ protected:
 
 	void OnLButtonUp(WPARAM wParam, LPARAM lParam);
 
-	//void OnTimer(UINT nIDEvent);
-
 	void OnDraw(HDC hDC);
-
-	long LoadBmp(LPCTSTR lpszBmpFileName, HBITMAP& hBmpHandle, BITMAP& scBmpInfo);
-
-	bool IsRectInter(const RECT& rect1, const RECT& rect2, RECT* interRect = NULL);
-
-	void GetOrRect(const RECT& rect1, const RECT& rect2, RECT* orRect);
 
 	void Destroy(void);
 
@@ -64,8 +54,7 @@ protected:
 	HBITMAP  m_hCanvas;
 	HBITMAP  m_hBackground;
 	BITMAP   m_scCanvas;
-	HDC      m_hDestDC;
-	HDC      m_hSrcDC;
+	HDC      m_hDC;
 	HICON    m_hMousePointer;
 	POINT	 m_scPreMouse;
 	int	     m_nAction;
@@ -75,7 +64,7 @@ protected:
 };
 
 XWindowTest::XWindowTest()
-	: m_listHead(NULL), m_actWnd(NULL), m_hCanvas(NULL), m_hBackground(NULL), m_hDestDC(NULL), m_hSrcDC(NULL),
+	: m_listHead(NULL), m_actWnd(NULL), m_hCanvas(NULL), m_hBackground(NULL), m_hDC(NULL), 
 	m_hMousePointer(NULL), m_bVisibleFlag(false), m_nAction(XWINDOW_ACT_NOTHING), m_nIndex(-1)
 {
 	//memset(m_windows, 0x00, sizeof(XWindow*) * XWINDOW_NUM_MAX);
@@ -94,26 +83,18 @@ void XWindowTest::OnCreate(HWND hWnd)
 	this->m_hWnd = hWnd;
 
 	HDC hdc = ::GetDC(hWnd);
-	// Create memory device context
-	m_hDestDC = ::CreateCompatibleDC(hdc);
-	m_hSrcDC = ::CreateCompatibleDC(hdc);
+	g_util = new MyDrawingUtil(hdc);
+	m_hDC = ::CreateCompatibleDC(hdc);
 	// Create DDB with the window size
-	//m_hBackground = ::CreateCompatibleBitmap(hdc, m_scCanvas.bmWidth, m_scCanvas.bmHeight);
 	m_hCanvas = ::CreateCompatibleBitmap(hdc, m_nWidth, m_nHeight);
 	m_hBackground = ::CreateCompatibleBitmap(hdc, m_nWidth, m_nHeight);
 
 
 	HBITMAP hBmpOriginHandle;
-	this->LoadBmp(_T("..\\MyWindowsSim\\bg.bmp"), hBmpOriginHandle, m_scCanvas);
+	g_util->LoadBmp(_T("..\\MyWindowsSim\\bg.bmp"), hBmpOriginHandle, m_scCanvas);
 	// Zoom it to the window size
-	HBITMAP hOldSrc = (HBITMAP)::SelectObject(m_hSrcDC, hBmpOriginHandle);
-	HBITMAP hOldDest = (HBITMAP)::SelectObject(m_hDestDC, m_hCanvas);
-	::SetStretchBltMode(m_hDestDC, HALFTONE);
-	::StretchBlt(m_hDestDC, 0, 0, m_nWidth, m_nHeight,
-		m_hSrcDC, 0, 0, m_scCanvas.bmWidth, m_scCanvas.bmHeight, SRCCOPY);
-
-	::SelectObject(m_hDestDC, hOldDest);
-	::SelectObject(m_hSrcDC, hOldSrc);
+	g_util->CopyZoomedLayer(m_hCanvas, 0, 0, m_nWidth, m_nHeight,
+		hBmpOriginHandle, 0, 0, m_scCanvas.bmWidth, m_scCanvas.bmHeight);
 
 	::ReleaseDC(hWnd, hdc);
 
@@ -418,7 +399,7 @@ void XWindowTest::OnKeyDown(WPARAM wParam, LPARAM lParam)
 		return;
 	case VK_SPACE:
 		// Create new window
-		newWindow = new XWindow(m_hWnd, m_hDestDC, m_hSrcDC, m_hCanvas,
+		newWindow = new XWindow(m_hWnd, m_hCanvas,
 			400, 200, 200, 150, m_nWidth, m_nHeight);
 		newWindow->Alpha = 0xFF;
 		newWindow->Visible = true;
@@ -462,87 +443,9 @@ void XWindowTest::OnKeyDown(WPARAM wParam, LPARAM lParam)
 
 void XWindowTest::OnDraw(HDC hDC)
 {
-	HBITMAP hOld = (HBITMAP)::SelectObject(m_hSrcDC, m_hCanvas);
-	::BitBlt(hDC, 0, 0, m_nWidth, m_nHeight, m_hSrcDC, 0, 0, SRCCOPY);
-	::SelectObject(m_hSrcDC, hOld);
-	return;
-}
-
-long XWindowTest::LoadBmp(LPCTSTR lpszBmpFileName, HBITMAP &hBmpHandle, BITMAP &scBmpInfo)
-{
-	if (NULL == lpszBmpFileName)
-		return KW_ERR;
-
-	// Load the original bmp file to memory, and get the original size
-	hBmpHandle = (HBITMAP)
-		::LoadImage(NULL, lpszBmpFileName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-	if (NULL == hBmpHandle)
-		return KW_ERR;
-	::GetObject(hBmpHandle, sizeof(scBmpInfo), &scBmpInfo);
-
-	return KW_OK;
-}
-
-bool XWindowTest::IsRectInter(const RECT& rect1, const RECT& rect2, RECT* interRect)
-{
-	RECT rect;
-
-	if (rect1.left > rect2.left)
-		rect.left = rect1.left;
-	else
-		rect.left = rect2.left;
-
-	if (rect1.top > rect2.top)
-		rect.top = rect1.top;
-	else
-		rect.top = rect2.top;
-
-	if (rect1.right < rect2.right)
-		rect.right = rect1.right;
-	else
-		rect.right = rect2.right;
-
-	if (rect1.bottom < rect2.bottom)
-		rect.bottom = rect1.bottom;
-	else
-		rect.bottom = rect2.bottom;
-
-	if (rect.right - rect.left > 0
-		&& rect.bottom - rect.top >0)
-	{
-		if (interRect)
-			*interRect = rect;
-		return true;
-	}
-
-	return false;
-}
-
-void XWindowTest::GetOrRect(const RECT& rect1, const RECT& rect2, RECT* orRect)
-{
-	if (NULL == orRect)
-		return;
-
-	if (rect1.left > rect2.left)
-		orRect->left = rect2.left;
-	else
-		orRect->left = rect1.left;
-
-	if (rect1.top > rect2.top)
-		orRect->top = rect2.top;
-	else
-		orRect->top = rect1.top;
-
-	if (rect1.right < rect2.right)
-		orRect->right = rect2.right;
-	else
-		orRect->right = rect1.right;
-
-	if (rect1.bottom < rect2.bottom)
-		orRect->bottom = rect2.bottom;
-	else
-		orRect->bottom = rect1.bottom;
-
+	HBITMAP hOld = (HBITMAP)::SelectObject(m_hDC, m_hCanvas);
+	::BitBlt(hDC, 0, 0, m_nWidth, m_nHeight, m_hDC, 0, 0, SRCCOPY);
+	::SelectObject(m_hDC, hOld);
 	return;
 }
 
@@ -566,11 +469,8 @@ void XWindowTest::Destroy(void)
 	if (NULL != m_hCanvas)
 		::DeleteObject(m_hCanvas);
 
-	if (NULL != m_hDestDC)
-		::DeleteDC(m_hDestDC);
-
-	if (NULL != m_hSrcDC)
-		::DeleteDC(m_hSrcDC);
+	if (NULL != m_hDC)
+		::DeleteDC(m_hDC);
 
 	return;
 }

@@ -92,7 +92,7 @@ public:
 	};
 
 public:
-	XWindow(HWND hParent, HDC hDestDC, HDC hSrcDC, HBITMAP hCanvas, 
+	XWindow(HWND hParent, HBITMAP hCanvas, 
 		int width = XWINDOW_MIN_WIDTH, 
 		int height = XWINDOW_MIN_HEIGHT, 
 		int x = 0, int y = 0, 
@@ -135,6 +135,5 @@ private:
 	bool m_bOK;
 	int m_nMaxWidth;
 	int m_nMaxHeight;
-	MyDrawingUtil* m_util;
 };
 
