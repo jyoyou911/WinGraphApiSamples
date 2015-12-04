@@ -1,4 +1,4 @@
-// XSprite.h: XSprite 僋儔僗偺僀儞僞乕僼僃僀僗
+// XSprite.h: XSprite
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -6,88 +6,81 @@
 
 #include <windows.h>
 #include <wingdi.h>
+#include <vector>
+#include <memory>
 
-#define XSPRITE_FRAME_MAX 10
 
-typedef struct tag_XSpriteFrameSize
-{
-	int width;
-	int height;
-} XSpriteFrameSize;
-
-template <typename T>
-class XSHARED_HANDLE
+class XSpriteHelper
 {
 public:
-	XSHARED_HANDLE(T handle)
-		: m_count(0), m_handle(handle)
-	{}
+	/// <summary>
+	/// 各种Windows Handle的删除仿函数
+	/// </summary>
+	template<class T>
+	struct HAnythingDeleter
+	{
+		void operator()(T* p)
+		{
+			if (p != nullptr && *p != NULL)
+				::DeleteObject(*p);
+		}
+	};
 
-	~XSHARED_HANDLE()
-	{if(m_handle) ::DeleteObject(m_handle);}
+	/// <summary>
+	/// HDC的删除仿函数
+	/// </summary>
+	struct HDCDeleter
+	{
+		void operator()(HDC* p)
+		{
+			if (p != nullptr && *p != NULL)
+				::DeleteDC(*p);
+		}
+	};
 
-	void IncRef() {++m_count;}
-	void DecRef() {--m_count;}
-	bool IsNoRef() {return m_count? false : true;}
-	T& GetHandle() {return m_handle;}
-	T& operator *() const {return m_handle;}
+public:
+	std::shared_ptr<HBITMAP>& MakeSharedHBitmap(HBITMAP* bmp)
+	{
+		return std::shared_ptr<HBITMAP>(bmp, m_hBitmapDeleter);
+	}
+	std::shared_ptr<HDC>& MakeSharedHDC(HDC* hdc)
+	{
+		return std::shared_ptr<HDC>(hdc, m_hDCDeleter);
+	}
 
 private:
-	T m_handle;
-	int m_count;
+	HAnythingDeleter<HBITMAP> m_hBitmapDeleter;
+	HDCDeleter m_hDCDeleter;
 };
-
-typedef XSHARED_HANDLE<HBITMAP> XHBITMAP, *PXHBITMAP;
+	
+extern XSpriteHelper g_spriteHelper;
 
 class XSprite  
 {
 public:
-	enum 
-	{
-		XSPRITE_ERASE_PREVIOUS = 0, 
-		XSPRITE_ERASE_CURRENT, 
-	};
 
-	XSprite(HWND hParent);
+	XSprite(std::shared_ptr<HDC> pDest, std::shared_ptr<HDC> pSrc);
 	virtual ~XSprite();
-
-	// Transparent: white (0x1)
-	// Opaque     : black (0x0)
-	int CreateMask(HDC hDest, HDC hSrc, COLORREF crBackGround = 0x00FFFFFF, 
-		int range = 0, int index = 0);
 	
-	void AddFrame(PXHBITMAP hFrame, PXHBITMAP hMask, int weight, int height);
+	void SetCyclePic(std::shared_ptr<HBITMAP> cyclePic, int width, int height);
+	void GetSize(const int& width, const int& height);
 
-	void Next(void);
-	int  GetIndex(void);
-	void SetIndex(int index);
-	void ResetIndex(void);
-	void SetFrame(PXHBITMAP hFrame, PXHBITMAP hMask, int index = 0);
-	void SetSize(int wight, int height, int index = 0);
-	int  Width(void);
-	int  Height(void);	
+	void SetFrameRegions(std::vector<RECT>&& regions);
+	void GetFrameRegions(const std::vector<RECT>& regions);
 
-	void Draw(HDC hDest, HDC hSrc, HBITMAP hCanvas, int x, int y, int width, int height);
-	void Draw(HDC hDest, HDC hSrc, HBITMAP hCanvas);
-	void Erase(HDC hDest, HDC hSrc, HBITMAP hCanvas, int flag = XSPRITE_ERASE_CURRENT);	
+	virtual void OnKeyDown(WPARAM wParam, LPARAM lParam) {}
 
-protected:
-	HWND m_hParentWnd;
-	int m_nIndex;
-	PXHBITMAP m_hFrames[XSPRITE_FRAME_MAX];
-	PXHBITMAP m_hMasks[XSPRITE_FRAME_MAX];
-	HBITMAP m_hBackup;
-	XSpriteFrameSize m_scSizes[XSPRITE_FRAME_MAX];
-	XSpriteFrameSize m_scValidSizes[XSPRITE_FRAME_MAX];
+	virtual bool GenerateNextFrame(const HBITMAP& hFrame, const int& x, const int& y, const int& width, const int& height);
 
 public:
-	POINT Previous;
-	POINT Current;
-	int   Alpha;
-	int   Layer;
-	bool  UpdateFlag;
-	bool  Visible;
-	int   Count;
-	UINT  ID;
+	POINT Position;
+
+protected:
+	std::shared_ptr<HDC> m_hdcDest;
+	std::shared_ptr<HDC> m_hdcSrc;
+	std::vector<RECT> m_regions;
+	std::shared_ptr<HBITMAP> m_cyclePic;
+	std::shared_ptr<HBITMAP> m_mask;
+	HBITMAP m_hBackup;
 };
 

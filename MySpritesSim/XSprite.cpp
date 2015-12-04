@@ -5,61 +5,24 @@
 #include <math.h>
 #include "XSprite.h"
 
+XSpriteHelper g_spriteHelper;
  
-XSprite::XSprite(HWND hParent)
-		: m_hParentWnd(hParent), m_hBackup(NULL), m_nIndex(0), Alpha(0), Layer(1), 
-		  UpdateFlag(false), Count(0), ID(0)
+XSprite::XSprite(std::shared_ptr<HDC> pDest, std::shared_ptr<HDC> pSrc)
+		: m_hdcDest(pDest), m_hdcSrc(pSrc), m_hBackup(NULL)
 {
-	memset(m_hFrames, 0x00, XSPRITE_FRAME_MAX * sizeof(XHBITMAP));
-	memset(m_hMasks, 0x00, XSPRITE_FRAME_MAX * sizeof(XHBITMAP));
-	//memset(m_hBackups, 0x00, XSPRITE_FRAME_MAX * sizeof(HBITMAP));
-	memset(m_scSizes, 0x00, XSPRITE_FRAME_MAX * sizeof(XSpriteFrameSize));
-	memset(&Previous, 0x00, sizeof(Previous));
-	memset(&Current, 0x00, sizeof(Current));
+	
+	m_cyclePic = std::shared_ptr<HBITMAP>(nullptr);
+	m_mask = std::shared_ptr<HBITMAP>(nullptr);
+	memset(&Position, 0x00, sizeof(Position));
 }
 
 XSprite::~XSprite()
 {
-	int i;
-
-	for (i = 0; i < XSPRITE_FRAME_MAX; ++i)
-	{
-		if (NULL != m_hMasks[i])
-		{
-			m_hMasks[i]->DecRef();			
-			if (m_hMasks[i]->IsNoRef())
-				delete m_hMasks[i];
-			m_hMasks[i] = NULL;
-		}
-
-		if (NULL != m_hFrames[i])
-		{
-			m_hFrames[i]->DecRef();
-			if (m_hFrames[i]->IsNoRef())
-				::DeleteObject(m_hFrames[i]);
-			m_hFrames[i] = NULL;
-		}
-	}
 	if (m_hBackup)
 	{
 		::DeleteObject(m_hBackup);
 		m_hBackup = NULL;
 	}
-
-	memset(m_hFrames, 0x00, XSPRITE_FRAME_MAX * sizeof(XHBITMAP));
-	memset(m_hMasks, 0x00, XSPRITE_FRAME_MAX * sizeof(XHBITMAP));
-	//memset(m_hBackups, 0x00, XSPRITE_FRAME_MAX * sizeof(HBITMAP));
-	memset(m_scSizes, 0x00, XSPRITE_FRAME_MAX * sizeof(XSpriteFrameSize));
-	memset(&Previous, 0x00, sizeof(Previous));
-	memset(&Current, 0x00, sizeof(Current));
-
-	ID = 0;
-	Count = 0;
-	UpdateFlag = false;
-	Layer = 0;
-	Alpha = 0;
-	m_nIndex = 0;
-	m_hParentWnd = NULL;
 }
 
 void XSprite::SetFrame(PXHBITMAP hFrame, PXHBITMAP hMask, int index)
@@ -94,6 +57,11 @@ void XSprite::AddFrame(PXHBITMAP hFrame, PXHBITMAP hMask, int width, int height)
 	++Count;
 
 	return;
+}
+
+void XSprite::SetFrameRegions(std::vector<RECT>&& regions)
+{
+	m_Regions = std::move(regions);
 }
 
 void XSprite::Next(void)
@@ -254,7 +222,7 @@ void XSprite::Erase(HDC hDest, HDC hSrc, HBITMAP hCanvas, int flag)
 	::BitBlt(hDest, x, y, m_scSizes[m_nIndex].width, m_scSizes[m_nIndex].height, 
 		hSrc, 0, 0, 
 		SRCCOPY);
-
+	
 	// Restore
 	::SelectObject(hDest, hDestOld);
 	::SelectObject(hSrc, hSrcOld);
